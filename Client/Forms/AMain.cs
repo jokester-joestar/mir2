@@ -210,7 +210,7 @@ namespace Launcher
 
             try
             {
-                HttpClientHandler httpClientHandler = new() { AllowAutoRedirect = true };
+                HttpClientHandler httpClientHandler = CreateHttpClientHandler();
                 ProgressMessageHandler progressMessageHandler = new(httpClientHandler);
 
                 progressMessageHandler.HttpReceiveProgress += (_, args) =>
@@ -329,7 +329,7 @@ namespace Launcher
 
         public byte[] Download(string fileName)
         {
-            using (HttpClient client = new())
+            using (HttpClient client = new(CreateHttpClientHandler()))
             {
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -361,6 +361,57 @@ namespace Launcher
                     return null;
                 }
             }
+
+        }
+
+        private HttpClientHandler CreateHttpClientHandler()
+        {
+            var handler = new HttpClientHandler()
+            {
+                AllowAutoRedirect = true
+            };
+
+            try
+            {
+                if (Settings.P_ProxyEnabled && !string.IsNullOrWhiteSpace(Settings.P_Proxy))
+                {
+                    // Expect formats like "host:port" or with scheme
+                    string proxy = Settings.P_Proxy.Trim();
+                    WebProxy webProxy = null;
+
+                    if (proxy.Contains(":") && !proxy.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !proxy.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // try split host:port
+                        var parts = proxy.Split(':');
+                        if (parts.Length == 2 && int.TryParse(parts[1], out int port))
+                        {
+                            webProxy = new WebProxy(parts[0], port);
+                        }
+                        else
+                        {
+                            webProxy = new WebProxy(proxy);
+                        }
+                    }
+                    else
+                    {
+                        webProxy = new WebProxy(proxy);
+                    }
+
+                    if (webProxy != null)
+                    {
+                        handler.UseProxy = true;
+                        handler.Proxy = webProxy;
+                        // Do not send default credentials by default; can be adjusted if needed
+                        handler.DefaultProxyCredentials = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SaveError($"CreateHttpClientHandler proxy setup failed: {ex}");
+            }
+
+            return handler;
         }
 
         public FileInformation GetFileInformation(string fileName)

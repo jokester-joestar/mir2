@@ -199,6 +199,9 @@ namespace Client
         public static string P_Client = Application.StartupPath + "\\";
         public static bool P_AutoStart = false;
         public static int P_Concurrency = 1;
+        // Proxy settings for launcher downloads
+        public static bool P_ProxyEnabled = false;
+        public static string P_Proxy = "127.0.0.1:7890";
 
         public static void Load()
         {
@@ -299,6 +302,9 @@ namespace Client
             P_AutoStart = Reader.ReadBoolean("Launcher", "AutoStart", P_AutoStart);
             P_ServerName = Reader.ReadString("Launcher", "ServerName", P_ServerName);
             P_BrowserAddress = Reader.ReadString("Launcher", "Browser", P_BrowserAddress);
+            // Proxy group (like [Proxy] Enable=true/false, Proxy=host:port)
+            P_ProxyEnabled = Reader.ReadBoolean("Proxy", "Enable", P_ProxyEnabled);
+            P_Proxy = Reader.ReadString("Proxy", "Proxy", P_Proxy);
             P_Concurrency = Reader.ReadInt32("Launcher", "ConcurrentDownloads", P_Concurrency);
 
 
